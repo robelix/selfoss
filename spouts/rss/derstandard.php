@@ -109,7 +109,7 @@ class derstandard extends feed {
         "at-b"      => "http://derstandard.at/?page=rss&ressortid=1662",
         "at-k"      => "http://derstandard.at/?page=rss&ressortid=1922",
         "at-n"      => "http://derstandard.at/?page=rss&ressortid=2312",
-        "at-o"      => "http://derstandard.at/?page=rss&ressortid=1242317404525"
+        "at-o"      => "http://derstandard.at/?page=rss&ressortid=1242317404525",
         "at-sb"     => "http://derstandard.at/?page=rss&ressortid=3344",
         "at-st"     => "http://derstandard.at/?page=rss&ressortid=825",
         "at-t"      => "http://derstandard.at/?page=rss&ressortid=6209",
