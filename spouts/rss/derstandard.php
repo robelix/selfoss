@@ -178,7 +178,8 @@ class derstandard extends feed {
                 $content = $this->getTag($div[1], $div[2], $originalContent, $div[0], $div[3]);
                 if(is_array($content) && count($content)>=1) {
                     $content = $content[0];
-                    
+                    // remove scripts
+                    $content = preg_replace('/<script.*?<\/script>/si', '', $content);
                     // remove empty <ul> - this happens if there is no image in article
                     $content = preg_replace('#<ul>\s*<li>\s*</li>\s*</ul>#ims', '', $content);
                     
