@@ -148,7 +148,7 @@ class Items extends Database {
     public function findAll($itemsInFeed) {
         $itemsFound = array();
         array_walk($itemsInFeed, function( &$value ) { $value = \F3::get('db')->quote($value); });
-        $query = "SELECT uid AS uid FROM items WHERE uid IN (". implode(',', $itemsInFeed) .")";
+        $query = 'SELECT uid AS uid FROM '.\F3::get('db_prefix').'items WHERE uid IN ('. implode(',', $itemsInFeed) .')';
         $res = \F3::get('db')->query($query);
         if ($res) {
             $all = $res->fetchAll();
@@ -195,7 +195,7 @@ class Items extends Database {
         else if(isset($options['type']) && $options['type']=='unread'){
             $where .= ' AND unread=1 ';
             if(\F3::get('unread_order')=='asc'){
-            	$order = 'ASC';
+                $order = 'ASC';
             }
         }
         
