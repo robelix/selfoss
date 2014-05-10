@@ -221,6 +221,7 @@ class Index extends BaseController {
         } else {
             if($itemDao->hasMore())
                 $itemsHtml .= '<div class="stream-more"><span>'. \F3::get('lang_more').'</span></div>';
+                $itemsHtml .= '<div class="mark-these-read"><span>'. \F3::get('lang_markread').'</span></div>';
         }
         
         return $itemsHtml;
@@ -235,8 +236,10 @@ class Index extends BaseController {
      */
     private function convertTagsToAssocArray($tags) {
         $assocTags = array();
-        foreach($tags as $tag)
-            $assocTags[$tag['tag']] = $tag['color'];
+        foreach($tags as $tag) {
+            $assocTags[$tag['tag']]['backColor'] = $tag['color'];
+            $assocTags[$tag['tag']]['foreColor'] = \helpers\Color::colorByBrightness($tag['color']);
+        }
         return $assocTags;
     }
 }
