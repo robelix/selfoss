@@ -4,11 +4,11 @@ namespace spouts\rss;
 
 /**
  * Plugin for fetching the news from derstandard.at with the full text
- * based on heise.php
+ * based on the heise.php spout
  *
  * @package    plugins
  * @subpackage news
- * @copyright  Copyright (c) Tobias Zeising (http://www.aditu.de)
+ * @copyright  Copyright (c) Robelix <roland@robelix.com>
  * @license    GPLv3 (http://www.gnu.org/licenses/gpl-3.0.html)
  * @author     Robelix <roland@robelix.com>
  * @author     Tobias Zeising <tobias.zeising@aditu.de>
@@ -199,16 +199,69 @@ class derstandard extends feed {
             foreach($this->textDivs as $div) {
                 $content = $this->getTag($div[1], $div[2], $originalContent, $div[0], $div[3]);
                 if(is_array($content) && count($content)>=1) {
-                    $return = htmLawed($content[0], $this->htmLawedConfig);
+                    $return = $content[0];
+
+                    if (preg_match('/SlideshowEntries\[/', $return)) {
+                        $return = $this->extractSlideshow($return);
+                    }
+
+                    $return = htmLawed($return, $this->htmLawedConfig);
+                    
+                    // remove ugly crap
+                    $return = str_replace('SharingEyeCandy.initialize();', '', $return);
                     
                     // remove crap around images
-                    $return = preg_replace('/(<a .*?>).*?(<img .*?>).*?(<\/a>)/', '$1<br />$2<br />$3<br />', $return);
+                    $return = preg_replace('/(<a .*?>).*?(<img .*?>).*?(<\/a>)/', '<p>$1$2</a></p><p><em>$3</em></p>', $return);
                     
                     return $return;
                 }
             }
         }
         return parent::getContent();
+    }
+    
+    /**
+     * extract javascript slideshows
+     *
+     * @return string content with extracted slideshow
+     * @param string $content original content
+     */
+    private function extractSlideshow($content) {
+        $slideshowContent = '';
+        
+        # find all slideshow entries
+        preg_match_all('/SlideshowEntries.*?(\{.*?\})/msi', $content, $matches);
+        
+        foreach($matches[1] as $entry) {
+            # find the image
+            preg_match('/\'visual\'.*?\'(.*?)\',/msi',$entry, $m2);
+            $image = $m2[1];
+            
+            # find the text
+            preg_match('/\'text\'.*?\'(.*?)\',/msi',$entry, $m2);
+            $text = $m2[1];
+            $text = str_replace('\\\'', '\'', $text);
+            $text = str_replace('\\"', '"', $text);
+
+            # remove weiter-link
+            $text = preg_replace('/<a class="continue.*?<\/a>/', '', $text);
+            
+            # remove other links since they don't work
+            $text = preg_replace('/<a .*?>/', '', $text);
+            $text = str_replace('</a>','', $text);
+            
+            # find the credits
+            preg_match('/\'credits\'.*?\'(.*?)\'\}/msi',$entry, $m2);
+            $credits = $m2[1];
+            
+            # create content
+            $slideshowContent .= '<p>'.$image.'</p><p><em>'.$credits.'</em></p>'.$text;
+        }
+        
+        # replace whole script tag
+        $content = preg_replace('/<script.*?SlideshowEntries.*?<\/script>/smi', $slideshowContent, $content);
+        
+        return $content;
     }
     
     /**
