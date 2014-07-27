@@ -140,10 +140,32 @@ class derstandard extends feed {
      * elements: start tag, attribute of start tag, value of start tag attribute, end
      */
     private $textDivs = array(
-        array("div", "id", "artikelLeft", array('<ul class="lookupLinksArtikel"', '<div id="articleTools"', '<div id="weiterLesen")') ),
+        # array("div", "id", "objectContent", array('<ul class="lookupLinksArtikel"', '<div id="articleTools"', '<div id="weiterLesen")') ),
+        array("div", "id", "objectContent", '<div id="articleTools"' ),
     );
 
+    
+    /**
+     * htmLawed configuration
+     */
+    private $htmLawedConfig = array(
+        'abs_url'  => 1,
+        'base_url' => 'http://www.derstandard.at/',
+        'comment'  => 1,
+        'safe'     => 0,
+    );
+    
+    
+    /**
+     * ctor
+     */
+    public function __construct() {
+        // include htmLawed
+        if(!function_exists('htmLawed'))
+            require('libs/htmLawed.php');
+    }
 
+    
     /**
      * loads content for given source
      *
@@ -177,19 +199,17 @@ class derstandard extends feed {
             foreach($this->textDivs as $div) {
                 $content = $this->getTag($div[1], $div[2], $originalContent, $div[0], $div[3]);
                 if(is_array($content) && count($content)>=1) {
-                    $content = $content[0];
-                    // remove scripts
-                    $content = preg_replace('/<script.*?<\/script>/si', '', $content);
-                    // remove empty <ul> - this happens if there is no image in article
-                    $content = preg_replace('#<ul>\s*<li>\s*</li>\s*</ul>#ims', '', $content);
+                    $return = htmLawed($content[0], $this->htmLawedConfig);
                     
-                    return $content;
+                    // remove crap around images
+                    $return = preg_replace('/(<a .*?>).*?(<img .*?>).*?(<\/a>)/', '$1<br />$2<br />$3<br />', $return);
+                    
+                    return $return;
                 }
             }
         }
         return parent::getContent();
     }
-    
     
     /**
      * get tag by attribute
@@ -209,6 +229,7 @@ class derstandard extends feed {
 
         if(is_null($end))
             $end = '</\1>';
+            
         elseif(is_array($end)) {
             $endparts = Array();
             foreach($end as $e) {
@@ -220,8 +241,9 @@ class derstandard extends feed {
 
         $attr = preg_quote($attr);
         $value = preg_quote($value);
-        $tag_regex = '#<('.$tag.')[^>]*'.$attr.'\s*=\s*([\'"])'.$value.'\2[^>]*>(.*?)'.$end.'#ims';
+        $tag_regex = '/<('.$tag.')[^>]*'.$attr.'\s*=\s*([\'"])'.$value.'\2[^>]*>(.*?)'.$end.'/ims';
         preg_match_all($tag_regex, $xml, $matches, PREG_PATTERN_ORDER);
+        
         return $matches[3];
     }
     
