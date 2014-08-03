@@ -152,7 +152,7 @@ class derstandard extends feed {
         'abs_url'  => 1,
         'base_url' => 'http://www.derstandard.at/',
         'comment'  => 1,
-        'safe'     => 0,
+        'safe'     => 1,
     );
     
     
@@ -201,23 +201,55 @@ class derstandard extends feed {
                 if(is_array($content) && count($content)>=1) {
                     $return = $content[0];
 
+                    // extract javascript slideshows to plain html
                     if (preg_match('/SlideshowEntries\[/', $return)) {
                         $return = $this->extractSlideshow($return);
                     }
 
+                    // remove javascript. htmLawed doesn't do that
+                    $return = $this->removeScripts($return);
+                    
                     $return = htmLawed($return, $this->htmLawedConfig);
                     
-                    // remove ugly crap
-                    $return = str_replace('SharingEyeCandy.initialize();', '', $return);
-                    
                     // remove crap around images
-                    $return = preg_replace('/(<a .*?>).*?(<img .*?>).*?(<\/a>)/', '<p>$1$2</a></p><p><em>$3</em></p>', $return);
+                    $return = $this->fixImages($return);
+                    
+                    // remove ugly crap
+                    // $return = str_replace('SharingEyeCandy.initialize();', '', $return);
+                    
+                    // remove empty li's
+                    $return = preg_replace('/<li class="empty">\s*<\/li>/', '', $return);
                     
                     return $return;
                 }
             }
         }
         return parent::getContent();
+    }
+    
+    private function fixImages($content) {
+        preg_match_all('/<a .*?<\/a>/', $content, $matches);
+        
+        foreach($matches[0] as $i => $link) {
+            
+            if (preg_match('/class="(facebook|twitter|googleplus)"/', $link)) {
+                # remove useless link.
+                $content = preg_replace('/'.preg_quote($link,'/').'/', '', $content);
+            }
+            
+            if (preg_match('/<img/', $link)) {
+                $cleaned = preg_replace('/(<a .*?>).*?(<img .*?>).*?(<\/a>)/', '<p>$1$2</a></p><p><em>$3</em></p>', $link);
+                $content = preg_replace('/'.preg_quote($link,'/').'/', $cleaned, $content);
+            }
+        }
+        echo '</pre>';
+    
+        return $content;
+    }
+    
+    private function removeScripts($content) {
+        $content = preg_replace('/<script.*?<\/script>/smi', '', $content);
+        return $content;
     }
     
     /**
@@ -245,10 +277,6 @@ class derstandard extends feed {
 
             # remove weiter-link
             $text = preg_replace('/<a class="continue.*?<\/a>/', '', $text);
-            
-            # remove other links since they don't work
-            $text = preg_replace('/<a .*?>/', '', $text);
-            $text = str_replace('</a>','', $text);
             
             # find the credits
             preg_match('/\'credits\'.*?\'(.*?)\'\}/msi',$entry, $m2);
